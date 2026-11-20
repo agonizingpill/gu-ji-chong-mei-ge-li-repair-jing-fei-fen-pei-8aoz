@@ -12,6 +12,7 @@
 4. 修复工序：方案依序建立工序依赖，资金未占用不得施工；前置工序未完成不可跳步；未施工方案撤销后可修订恢复。
 5. 专项经费：预算、占用、实付分别记录；行锁保障并发不超支；撤销返还占款，核销不得超过已占金额。
 6. 出柜借展：霉面积为 0、含水≤60%、最新低风险复核、工序及经费完成才准出柜；先交库房才准借展。
+7. 含水批量更正：在柜卷册含水率录错时，主管按每册最新测量填更正值建批，独立队列复用现有决策树整批改算。全批算齐才允许一次性切换；切换前原测量、原分级与各项业务照旧。单册失败仅可重试一次。在办批期间批内卷册发生并发复测或出柜，整批退回复核，原测量与已签出柜单照常留档。切换时以更正值生成新观测与待复核分级，原测量保留；更正分级须重新主管复核后该册才可出柜。风险分级页面可查本批进度、册项明细与退回原因。
 
 ## 快速启动
 
@@ -59,7 +60,7 @@ docker compose exec backend python -m src.seed
 | 认证与追踪 | JWT 三角色、动作审计、请求追踪与突发请求限制中间件 |
 | ML | NumPy / scikit-learn 决策树、分层留出评估 |
 
-`backend/src/models.py` 是关系模型，`schemas.py` 是输入契约；`catalog_service.py`、`isolation_service.py`、`risk_service.py`、`treatment_service.py`、`grant_service.py`、`handover_service.py` 分别维护六模块约束，`routes.py` 只映射权限和业务调用。建表在首次启动创建，适合独立演示库。
+`backend/src/models.py` 是关系模型，`schemas.py` 是输入契约；`catalog_service.py`、`isolation_service.py`、`risk_service.py`、`treatment_service.py`、`grant_service.py`、`handover_service.py`、`correction_service.py` 分别维护各模块约束，`routes.py` 只映射权限和业务调用。建表在首次启动创建，适合独立演示库。
 
 `frontend/src/pages/` 对应六模块；`components/folio-index.js` 复用卷册索引和选择器，`ledger.js` 复用表格与表单字段，`steps.js` 绘制真实工序依赖。`api/client.js` 统一请求，`stores/workspace.js` 持有会话与卷宗，`utils/format.js` 和 `utils/forms.js` 分别处理展示和可恢复表单状态。双字体是 Noto Serif SC 与 Noto Sans SC；网络不通时浏览器使用 serif / sans-serif 回退。
 

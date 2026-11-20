@@ -2,6 +2,7 @@ from sqlalchemy import select
 from .models import Accession,Isolation,Cabinet,Treatment,Step,Handover,now
 from .common import get,reject,finish
 from .catalog_service import latest_observation,reviewed_risk
+from . import correction_service as correction
 def handover(db,data,user):
     folio=get(db,Accession,data.accession_id,True)
     obs=latest_observation(db,folio.id)
@@ -13,8 +14,12 @@ def handover(db,data,user):
     isolation=db.scalar(select(Isolation).where(Isolation.accession_id==folio.id,Isolation.active==True))
     if data.kind=='storage':
         reject(not isolation,'卷册已出柜，无需重复交接')
+        # 在办含水更正批期间出柜：出柜签照常办理留档，整批退回复核。
+        batch=correction.mark_returned(db,folio.id,f'卷册《{folio.title}》在更正批期间办理出柜')
         get(db,Cabinet,isolation.cabinet_id,True);isolation.active=False;isolation.exited=now();folio.status='released'
     else:
         reject(folio.status!='released' or isolation is not None,'借展需先验收出柜移交库房')
         reject(db.scalar(select(Handover).where(Handover.accession_id==folio.id,Handover.kind=='exhibition')) is not None,'已办理借展交接')
-    row=Handover(**data.model_dump());db.add(row);db.flush();return finish(db,user,'验收出柜' if data.kind=='storage' else '借展交接',row)
+    row=Handover(**data.model_dump());db.add(row);db.flush()
+    if data.kind=='storage' and batch:finish(db,user,'更正批因并发出柜退回',batch)
+    return finish(db,user,'验收出柜' if data.kind=='storage' else '借展交接',row)

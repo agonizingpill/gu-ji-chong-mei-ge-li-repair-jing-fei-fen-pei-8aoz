@@ -6,7 +6,7 @@ from .models import *
 from .schemas import *
 from .auth import current,editor,supervisor,issue,password_hash
 from .common import dump
-from . import catalog_service as catalog,isolation_service as isolation,risk_service as risk,treatment_service as treatment,grant_service as grant,handover_service as handovers
+from . import catalog_service as catalog,isolation_service as isolation,risk_service as risk,treatment_service as treatment,grant_service as grant,handover_service as handovers,correction_service as correction
 router=APIRouter()
 @router.post('/auth/login')
 def login(data:Login,db=Depends(session)):
@@ -15,7 +15,7 @@ def login(data:Login,db=Depends(session)):
     return {'token':issue(user),'username':user.username,'role':user.role}
 @router.get('/workspace')
 def workspace(db=Depends(session),user=Depends(current)):
-    models=[Accession,Observation,Cabinet,Isolation,RiskAssessment,Treatment,Step,Grant,Encumbrance,Handover]
+    models=[Accession,Observation,Cabinet,Isolation,RiskAssessment,Treatment,Step,Grant,Encumbrance,Handover,CorrectionBatch,CorrectionItem]
     return {m.__tablename__:[dump(v) for v in db.scalars(select(m).order_by(m.id))] for m in models}
 @router.get('/audit')
 def audits(db=Depends(session),user=Depends(supervisor)):return [dump(v) for v in db.scalars(select(Audit).order_by(Audit.id.desc()).limit(100))]
@@ -47,3 +47,9 @@ def fund(id:int,data:FundInput,db=Depends(session),user=Depends(supervisor)):ret
 def settle(id:int,data:SettleInput,db=Depends(session),user=Depends(supervisor)):return grant.settle(db,id,data,user)
 @router.post('/handovers')
 def handover(data:HandoverInput,db=Depends(session),user=Depends(supervisor)):return handovers.handover(db,data,user)
+@router.post('/correction-batches')
+def create_correction(data:CorrectionBatchInput,db=Depends(session),user=Depends(supervisor)):return correction.create_batch(db,data,user)
+@router.post('/correction-items/{id}/retry')
+def retry_correction(id:int,db=Depends(session),user=Depends(supervisor)):return correction.retry_item(db,id,user)
+@router.post('/correction-batches/{id}/switch')
+def switch_correction(id:int,db=Depends(session),user=Depends(supervisor)):return correction.switch_batch(db,id,user)

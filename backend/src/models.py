@@ -96,6 +96,31 @@ class Handover(Base):
     recipient:Mapped[str]=mapped_column(String(100))
     note:Mapped[str]=mapped_column(String(200))
     at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+class CorrectionBatch(Base):
+    __tablename__='correction_batches'
+    id:Mapped[int]=mapped_column(primary_key=True)
+    reason:Mapped[str]=mapped_column(String(300),default='')
+    status:Mapped[str]=mapped_column(String(20),default='open')
+    return_reason:Mapped[str]=mapped_column(String(300),default='')
+    total:Mapped[int]=mapped_column(Integer,default=0)
+    switched_at:Mapped[datetime|None]=mapped_column(DateTime(timezone=True),nullable=True)
+    created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+class CorrectionItem(Base):
+    __tablename__='correction_items'
+    __table_args__=(UniqueConstraint('batch_id','accession_id'),CheckConstraint('retry_count >= 0'))
+    id:Mapped[int]=mapped_column(primary_key=True)
+    batch_id:Mapped[int]=mapped_column(ForeignKey('correction_batches.id'))
+    accession_id:Mapped[int]=mapped_column(ForeignKey('accessions.id'))
+    snapshot_observation_id:Mapped[int]=mapped_column(ForeignKey('observations.id'))
+    original_humidity:Mapped[float]=mapped_column(Float)
+    corrected_humidity:Mapped[float]=mapped_column(Float)
+    status:Mapped[str]=mapped_column(String(20),default='queued')
+    predicted:Mapped[str|None]=mapped_column(String(20),nullable=True)
+    metrics:Mapped[dict]=mapped_column(JSON,default=dict)
+    error:Mapped[str]=mapped_column(String(200),default='')
+    retry_count:Mapped[int]=mapped_column(Integer,default=0)
+    corrected_observation_id:Mapped[int|None]=mapped_column(ForeignKey('observations.id'),nullable=True)
+    risk_assessment_id:Mapped[int|None]=mapped_column(ForeignKey('risk_assessments.id'),nullable=True)
 class Audit(Base):
     __tablename__='audit'
     id:Mapped[int]=mapped_column(primary_key=True)

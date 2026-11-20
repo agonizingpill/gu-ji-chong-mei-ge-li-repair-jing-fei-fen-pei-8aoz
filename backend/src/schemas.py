@@ -47,3 +47,9 @@ class HandoverInput(BaseModel):
     kind:str=Field(pattern='^(storage|exhibition)$')
     recipient:str=Field(min_length=2,max_length=100)
     note:str=Field(min_length=2,max_length=200)
+class CorrectionItemInput(BaseModel):
+    accession_id:int
+    corrected_humidity:float=Field(ge=0,le=100)
+class CorrectionBatchInput(BaseModel):
+    reason:str=Field(min_length=2,max_length=300)
+    items:list[CorrectionItemInput]=Field(min_length=1,max_length=200)
